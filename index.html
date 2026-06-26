@@ -13,49 +13,51 @@
         .title-font { font-family: 'Space Grotesk', sans-serif; }
         .treasure-bg { background: linear-gradient(135deg, #0f172a 0%, #1e2937 100%); }
         .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(16px); }
-        .question-row { transition: all 0.2s; }
     </style>
 </head>
-<body class="treasure-bg text-white min-h-screen pb-12">
+<body class="treasure-bg text-white min-h-screen">
     <div class="max-w-2xl mx-auto p-4">
 
         <!-- Mode Selection -->
-        <div id="mode-select" class="text-center py-12">
-            <h1 class="title-font text-5xl font-bold mb-2">QUESTIFY</h1>
-            <p class="text-emerald-400">English Treasure Hunt</p>
-            <div class="grid grid-cols-2 gap-6 mt-12 max-w-sm mx-auto">
-                <button onclick="setMode('player')" class="glass py-12 rounded-3xl text-lg font-semibold">TEAM PLAYER</button>
-                <button onclick="setMode('master')" class="glass py-12 rounded-3xl text-lg font-semibold">MASTER MODE</button>
+        <div id="mode-select">
+            <div class="text-center py-12">
+                <h1 class="title-font text-5xl font-bold mb-2">QUESTIFY</h1>
+                <p class="text-emerald-400 mb-8">English Treasure Hunt</p>
+                <div class="grid grid-cols-2 gap-6 max-w-sm mx-auto">
+                    <button onclick="setMode('player')" class="glass py-12 rounded-3xl font-semibold text-lg">TEAM PLAYER</button>
+                    <button onclick="setMode('master')" class="glass py-12 rounded-3xl font-semibold text-lg">MASTER MODE</button>
+                </div>
             </div>
         </div>
 
-        <!-- MASTER MODE -->
+        <!-- MASTER SCREEN -->
         <div id="master-screen" class="hidden">
             <div class="glass rounded-3xl p-6">
-                <h2 class="title-font text-3xl mb-6">Master Control</h2>
+                <h2 class="title-font text-3xl mb-6 flex items-center gap-3">
+                    👑 Master Control
+                </h2>
                 
-                <!-- Questions Sheet -->
-                <div class="mb-8">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl">Questions Master Sheet</h3>
-                        <button onclick="addNewQuestion()" class="bg-emerald-600 px-5 py-2 rounded-2xl text-sm">+ Add Question</button>
-                    </div>
-                    <div id="questions-sheet" class="max-h-[55vh] overflow-auto space-y-4"></div>
+                <div class="mb-4 flex justify-between items-center">
+                    <h3 class="text-lg">Questions Master Sheet</h3>
+                    <button onclick="addNewQuestion()" class="bg-emerald-600 px-5 py-2 rounded-2xl text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Add
+                    </button>
                 </div>
 
+                <div id="questions-sheet" class="max-h-[50vh] overflow-auto space-y-4 mb-8"></div>
+
                 <div class="grid grid-cols-2 gap-4">
-                    <button onclick="generateAllQRCodes()" class="py-4 bg-amber-400 text-black rounded-2xl font-semibold">Generate Team QR Codes</button>
-                    <button onclick="exportQuestions()" class="py-4 border border-white/30 rounded-2xl">Export Questions</button>
+                    <button onclick="generateAllQRCodes()" class="py-4 bg-amber-400 text-black rounded-2xl font-semibold">QR Codes</button>
+                    <button onclick="showGameURL()" class="py-4 border border-white/30 rounded-2xl">Show Game URL</button>
                 </div>
             </div>
         </div>
 
-        <!-- PLAYER SCREEN (same as before) -->
+        <!-- PLAYER SCREEN -->
         <div id="player-screen" class="hidden">
-            <!-- [Player UI - unchanged for brevity, but fully functional] -->
             <div class="glass border border-white/10 rounded-3xl p-6">
-                <div id="player-header" class="flex justify-between mb-6 text-lg"></div>
-                <div id="question-content" class="min-h-[300px]"></div>
+                <div id="player-header" class="flex justify-between items-center mb-6 text-lg font-medium"></div>
+                <div id="question-content" class="min-h-[320px]"></div>
                 <div id="feedback" class="hidden mt-8 p-6 rounded-3xl"></div>
                 <div class="grid grid-cols-2 gap-4 mt-10">
                     <button onclick="submitAnswer()" id="submit-btn" class="col-span-2 bg-white text-black py-5 rounded-3xl font-semibold">SUBMIT ANSWER</button>
@@ -65,37 +67,47 @@
         </div>
 
         <!-- QR Modal -->
-        <div id="qr-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 overflow-auto">
-            <div class="glass rounded-3xl p-8 max-w-lg w-full">
+        <div id="qr-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+            <div class="glass rounded-3xl p-8 max-w-lg w-full max-h-[90vh] overflow-auto">
                 <h3 class="text-2xl mb-6 text-center">Team QR Codes</h3>
                 <div id="qr-grid" class="grid grid-cols-2 gap-8"></div>
                 <button onclick="closeQRModal()" class="mt-8 w-full py-4 border border-white/30 rounded-2xl">Close</button>
+            </div>
+        </div>
+
+        <!-- Game URL Modal -->
+        <div id="url-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+            <div class="glass rounded-3xl p-8 max-w-md w-full text-center">
+                <h3 class="text-xl mb-4">Your Game URL</h3>
+                <p id="game-url-text" class="bg-white/10 p-4 rounded-2xl break-all text-sm mb-6"></p>
+                <button onclick="copyURL()" class="w-full py-4 bg-amber-400 text-black rounded-2xl mb-4">Copy URL</button>
+                <button onclick="closeURLModal()" class="w-full py-4 border border-white/30 rounded-2xl">Close</button>
             </div>
         </div>
     </div>
 
     <script>
         let questions = [];
-        let teamProgress = {1:0,2:0,3:0,4:0,5:0,6:0};
+        let teamProgress = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0};
         let currentTeam = null;
         let currentClueIndex = 0;
+        let selectedOption = null;
 
-        const defaultQuestions = [ /* Add your default questions here */ ];
+        const defaultQuestions = [
+            { id: 1, type: "grammar", question: "Choose the correct sentence:", options: ["She don't like apples.", "She doesn't like apples.", "She no like apples."], answer: 1, explanation: "Correct! Subject-verb agreement.", image: "" },
+            { id: 2, type: "vocab", question: "What is the synonym of 'enormous'?", options: ["Tiny", "Huge", "Quick", "Angry"], answer: 1, explanation: "Enormous means very large.", image: "" },
+            { id: 3, type: "picture", question: "What animal is this?", options: ["Lion", "Tiger", "Leopard", "Cheetah"], answer: 0, explanation: "King of the jungle!", image: "https://picsum.photos/id/1015/800/500" }
+        ];
 
         function loadData() {
-            const saved = localStorage.getItem('questifyQuestions');
-            questions = saved ? JSON.parse(saved) : defaultQuestions;
-            const prog = localStorage.getItem('questifyGlobalProgress');
-            if (prog) teamProgress = JSON.parse(prog);
+            const savedQ = localStorage.getItem('questifyQuestions');
+            questions = savedQ ? JSON.parse(savedQ) : defaultQuestions;
+            const savedP = localStorage.getItem('questifyGlobalProgress');
+            if (savedP) teamProgress = JSON.parse(savedP);
         }
 
-        function saveQuestions() {
-            localStorage.setItem('questifyQuestions', JSON.stringify(questions));
-        }
-
-        function saveProgress() {
-            localStorage.setItem('questifyGlobalProgress', JSON.stringify(teamProgress));
-        }
+        function saveQuestions() { localStorage.setItem('questifyQuestions', JSON.stringify(questions)); }
+        function saveProgress() { localStorage.setItem('questifyGlobalProgress', JSON.stringify(teamProgress)); }
 
         function setMode(m) {
             document.getElementById('mode-select').classList.add('hidden');
@@ -108,26 +120,25 @@
             }
         }
 
-        // ==================== MASTER QUESTIONS SHEET ====================
         function renderQuestionsSheet() {
             const container = document.getElementById('questions-sheet');
             container.innerHTML = '';
             questions.forEach((q, i) => {
                 const div = document.createElement('div');
-                div.className = 'glass rounded-2xl p-5 question-row';
+                div.className = 'glass rounded-2xl p-5';
                 div.innerHTML = `
-                    <div class="flex justify-between">
-                        <div class="flex gap-4">
-                            <span class="font-mono bg-white/10 px-3 py-1 rounded-xl">#${q.id}</span>
-                            <span class="uppercase text-xs px-3 py-1 bg-amber-400/20 text-amber-400 rounded-xl">${q.type}</span>
-                        </div>
+                    <div class="flex justify-between items-start">
                         <div>
-                            <button onclick="editQuestion(${i})" class="mr-4 text-blue-400"><i class="fa-solid fa-pen"></i></button>
+                            <span class="font-mono text-sm">#${q.id}</span>
+                            <span class="ml-3 uppercase text-xs px-3 py-1 bg-amber-400/20 text-amber-400 rounded-xl">${q.type}</span>
+                        </div>
+                        <div class="flex gap-4">
+                            <button onclick="editQuestion(${i})" class="text-blue-400"><i class="fa-solid fa-pen"></i></button>
                             <button onclick="deleteQuestion(${i})" class="text-red-400"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                    <p class="mt-3 line-clamp-2">${q.question}</p>
-                    ${q.image ? `<img src="${q.image}" class="mt-3 w-full h-32 object-cover rounded-xl">` : ''}
+                    <p class="mt-3">${q.question}</p>
+                    ${q.image ? `<img src="${q.image}" class="mt-4 w-full h-40 object-cover rounded-xl">` : ''}
                 `;
                 container.appendChild(div);
             });
@@ -137,37 +148,36 @@
             const newQ = {
                 id: questions.length ? Math.max(...questions.map(q => q.id)) + 1 : 1,
                 type: "grammar",
-                question: "Enter question here",
-                options: ["Option 1", "Option 2", "Option 3", "Option 4"],
+                question: "New question text?",
+                options: ["Option A", "Option B", "Option C", "Option D"],
                 answer: 0,
-                explanation: "Explanation of correct answer",
+                explanation: "Explanation here",
                 image: ""
             };
             questions.push(newQ);
             saveQuestions();
             renderQuestionsSheet();
-            editQuestion(questions.length - 1);
+            editQuestion(questions.length-1);
         }
 
         function editQuestion(index) {
             const q = questions[index];
-            let html = `
-                <div class="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4">
+            const html = `
+                <div class="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4 overflow-auto">
                     <div class="glass rounded-3xl p-8 w-full max-w-lg">
                         <h3 class="text-xl mb-6">Edit Question #${q.id}</h3>
-                        <input id="edit-type" value="${q.type}" class="w-full mb-4 p-3 bg-white/10 rounded-2xl" placeholder="Type: grammar/vocab/picture">
+                        <input id="edit-type" value="${q.type}" placeholder="Type" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
                         <textarea id="edit-question" class="w-full h-24 p-3 bg-white/10 rounded-2xl mb-4">${q.question}</textarea>
-                        <input id="edit-image" value="${q.image||''}" class="w-full p-3 bg-white/10 rounded-2xl mb-4" placeholder="Image URL (optional)">
-                        <input id="edit-options" value="${q.options.join(', ')}" class="w-full p-3 bg-white/10 rounded-2xl mb-4" placeholder="Options separated by commas">
-                        <input id="edit-answer" value="${q.answer}" class="w-full p-3 bg-white/10 rounded-2xl mb-4" placeholder="Correct answer index (0,1,2...)">
+                        <input id="edit-image" value="${q.image||''}" placeholder="Image URL" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
+                        <input id="edit-options" value="${q.options.join(', ')}" placeholder="Options (comma separated)" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
+                        <input id="edit-answer" value="${q.answer}" placeholder="Correct index (0,1,2...)" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
                         <textarea id="edit-explain" class="w-full h-20 p-3 bg-white/10 rounded-2xl">${q.explanation}</textarea>
                         <div class="flex gap-4 mt-8">
-                            <button onclick="saveEditedQuestion(${index});this.closest('.fixed').remove()" class="flex-1 py-4 bg-emerald-600 rounded-2xl">Save</button>
+                            <button onclick="saveEditedQuestion(${index});this.closest('.fixed').remove()" class="flex-1 py-4 bg-emerald-600 rounded-2xl">Save Changes</button>
                             <button onclick="this.closest('.fixed').remove()" class="flex-1 py-4 border border-white/30 rounded-2xl">Cancel</button>
                         </div>
                     </div>
-                </div>
-            `;
+                </div>`;
             document.body.insertAdjacentHTML('beforeend', html);
         }
 
@@ -176,7 +186,7 @@
             q.type = document.getElementById('edit-type').value;
             q.question = document.getElementById('edit-question').value;
             q.image = document.getElementById('edit-image').value;
-            q.options = document.getElementById('edit-options').value.split(',').map(s => s.trim());
+            q.options = document.getElementById('edit-options').value.split(',').map(o => o.trim());
             q.answer = parseInt(document.getElementById('edit-answer').value);
             q.explanation = document.getElementById('edit-explain').value;
             saveQuestions();
@@ -191,7 +201,21 @@
             }
         }
 
-        // QR Codes (Improved Grid)
+        function showGameURL() {
+            const url = window.location.origin + window.location.pathname;
+            document.getElementById('game-url-text').textContent = url;
+            document.getElementById('url-modal').classList.remove('hidden');
+        }
+
+        function copyURL() {
+            const url = window.location.origin + window.location.pathname;
+            navigator.clipboard.writeText(url).then(() => alert("URL copied!"));
+        }
+
+        function closeURLModal() {
+            document.getElementById('url-modal').classList.add('hidden');
+        }
+
         function generateAllQRCodes() {
             const modal = document.getElementById('qr-modal');
             const grid = document.getElementById('qr-grid');
@@ -201,20 +225,13 @@
             for (let t = 1; t <= 6; t++) {
                 const div = document.createElement('div');
                 div.className = "text-center";
-                div.innerHTML = `
-                    <div class="font-bold mb-3">TEAM ${t}</div>
-                    <div id="qr-team-${t}" class="mx-auto"></div>
-                    <div class="text-xs mt-2 text-slate-400">Scan for Team ${t}</div>
-                `;
+                div.innerHTML = `<div class="font-bold mb-3">TEAM ${t}</div><div id="qr-${t}" class="mx-auto"></div>`;
                 grid.appendChild(div);
-
-                const url = `${window.location.origin}${window.location.pathname}?team=${t}`;
-                new QRCode(document.getElementById(`qr-team-${t}`), {
-                    text: url,
+                new QRCode(document.getElementById(`qr-${t}`), {
+                    text: `${window.location.origin}${window.location.pathname}?team=${t}`,
                     width: 160,
                     height: 160,
-                    colorDark: "#fcd34d",
-                    colorLight: "#1e2937"
+                    colorDark: "#fcd34d"
                 });
             }
         }
@@ -223,26 +240,69 @@
             document.getElementById('qr-modal').classList.add('hidden');
         }
 
-        function exportQuestions() {
-            const data = JSON.stringify(questions, null, 2);
-            const blob = new Blob([data], {type: 'application/json'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'questify-questions-backup.json';
-            a.click();
-        }
-
-        // Player functions (simplified)
+        // Player Functions
         function initPlayer() {
             const params = new URLSearchParams(window.location.search);
-            currentTeam = parseInt(params.get('team')) || parseInt(prompt("Enter Team Number (1-6)"));
+            currentTeam = parseInt(params.get('team')) || parseInt(prompt("Enter your Team Number (1-6)"));
             if (!currentTeam) return;
             currentClueIndex = teamProgress[currentTeam] || 0;
             document.getElementById('player-header').innerHTML = `TEAM <span class="text-amber-400">${currentTeam}</span> • ${currentClueIndex}/${questions.length}`;
             loadClue();
         }
 
-        // ... (loadClue, submitAnswer, nextClue, etc. functions are the same as previous version)
+        function loadClue() {
+            if (currentClueIndex >= questions.length) return alert("🎉 Team " + currentTeam + " finished the hunt!");
+            const q = questions[currentClueIndex];
+            selectedOption = null;
+
+            let html = `<p class="text-xl leading-tight mb-8">${q.question}</p>`;
+            if (q.image) html += `<img src="${q.image}" class="w-full rounded-3xl mb-8">`;
+
+            html += `<div class="grid gap-3" id="options-grid"></div>`;
+            document.getElementById('question-content').innerHTML = html;
+
+            const grid = document.getElementById('options-grid');
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-5 border border-white/20 hover:border-amber-400 rounded-3xl transition";
+                btn.textContent = opt;
+                btn.onclick = () => selectOption(idx, btn);
+                grid.appendChild(btn);
+            });
+
+            document.getElementById('feedback').classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('submit-btn').classList.remove('hidden');
+        }
+
+        function selectOption(idx, btn) {
+            document.querySelectorAll('#options-grid button').forEach(b => b.classList.remove('border-amber-400', 'bg-amber-400/10'));
+            btn.classList.add('border-amber-400', 'bg-amber-400/10');
+            selectedOption = idx;
+        }
+
+        function submitAnswer() {
+            if (selectedOption === null) return alert("Please select an answer!");
+            const q = questions[currentClueIndex];
+            const fb = document.getElementById('feedback');
+
+            if (selectedOption === q.answer) {
+                fb.innerHTML = `<div class="bg-emerald-900/70 p-8 rounded-3xl text-center"><p class="text-5xl mb-4">🎉</p><p class="text-3xl font-bold">CORRECT!</p><p class="mt-4">${q.explanation}</p></div>`;
+                fb.classList.remove('hidden');
+                teamProgress[currentTeam] = currentClueIndex + 1;
+                saveProgress();
+                document.getElementById('submit-btn').classList.add('hidden');
+                document.getElementById('next-btn').classList.remove('hidden');
+            } else {
+                fb.innerHTML = `<div class="bg-red-900/70 p-8 rounded-3xl text-center"><p class="text-xl">Not correct. Try again!</p></div>`;
+                fb.classList.remove('hidden');
+            }
+        }
+
+        function nextClue() {
+            currentClueIndex++;
+            loadClue();
+        }
 
         window.onload = () => {
             loadData();
