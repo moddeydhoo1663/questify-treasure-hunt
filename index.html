@@ -33,32 +33,29 @@
         <!-- MASTER MODE -->
         <div id="master-screen" class="hidden">
             <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
-                <button onclick="showMasterTab(0)" id="tab-0" class="master-tab active px-5 py-2 rounded-2xl whitespace-nowrap bg-amber-400 text-black">Questions</button>
-                <button onclick="showMasterTab(1)" id="tab-1" class="master-tab px-5 py-2 rounded-2xl whitespace-nowrap">Team Scores</button>
-                <button onclick="showMasterTab(2)" id="tab-2" class="master-tab px-5 py-2 rounded-2xl whitespace-nowrap">QR Codes</button>
+                <button onclick="showMasterTab(0)" id="tab-0" class="px-5 py-2 rounded-2xl whitespace-nowrap bg-amber-400 text-black">Questions</button>
+                <button onclick="showMasterTab(1)" id="tab-1" class="px-5 py-2 rounded-2xl whitespace-nowrap">Team Scores</button>
+                <button onclick="showMasterTab(2)" id="tab-2" class="px-5 py-2 rounded-2xl whitespace-nowrap">QR Codes</button>
             </div>
 
-            <!-- Questions Table Tab -->
+            <!-- Questions Table -->
             <div id="tab-content-0">
                 <div class="glass rounded-3xl p-6">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-xl font-semibold">Questions Management</h3>
                         <div class="flex gap-3">
-                            <button onclick="addNewQuestion()" class="bg-emerald-600 px-5 py-2 rounded-2xl text-sm flex items-center gap-2">
-                                <i class="fa-solid fa-plus"></i> Add
-                            </button>
+                            <button onclick="addNewQuestion()" class="bg-emerald-600 px-5 py-2 rounded-2xl text-sm">+ Add</button>
                             <button onclick="importCSV()" class="bg-blue-600 px-5 py-2 rounded-2xl text-sm">Import CSV</button>
                         </div>
                     </div>
-
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto max-h-[55vh]">
                         <table class="w-full text-sm">
                             <thead>
-                                <tr class="text-left text-amber-400">
+                                <tr class="text-amber-400 text-left">
                                     <th class="p-3">ID</th>
                                     <th class="p-3">Category</th>
                                     <th class="p-3">Question</th>
-                                    <th class="p-3 text-center">Options</th>
+                                    <th class="p-3 text-center">Opts</th>
                                     <th class="p-3 text-center">Actions</th>
                                 </tr>
                             </thead>
@@ -68,7 +65,7 @@
                 </div>
             </div>
 
-            <!-- Team Scores Tab -->
+            <!-- Team Scores -->
             <div id="tab-content-1" class="hidden">
                 <div class="glass rounded-3xl p-6">
                     <h3 class="text-xl mb-6">Live Team Progress</h3>
@@ -77,7 +74,7 @@
                 </div>
             </div>
 
-            <!-- QR Tab -->
+            <!-- QR Codes -->
             <div id="tab-content-2" class="hidden">
                 <div class="glass rounded-3xl p-6 text-center">
                     <button onclick="generateAllQRCodes()" class="w-full py-6 bg-amber-400 text-black rounded-3xl font-semibold">Generate Team QR Codes</button>
@@ -85,10 +82,10 @@
             </div>
         </div>
 
-        <!-- PLAYER SCREEN (unchanged) -->
+        <!-- PLAYER SCREEN -->
         <div id="player-screen" class="hidden">
             <div class="glass border border-white/10 rounded-3xl p-6">
-                <div id="player-header" class="flex justify-between mb-6 text-lg"></div>
+                <div id="player-header" class="flex justify-between mb-6 text-lg font-medium"></div>
                 <div id="question-content" class="min-h-[320px]"></div>
                 <div id="feedback" class="hidden mt-8 p-6 rounded-3xl"></div>
                 <div class="grid grid-cols-2 gap-4 mt-10">
@@ -109,8 +106,6 @@
     </div>
 
     <script>
-        // ... (Same data loading and save functions as before)
-
         let questions = [];
         let teamProgress = {1:0,2:0,3:0,4:0,5:0,6:0};
         let currentTeam = null;
@@ -127,10 +122,27 @@
         function saveQuestions() { localStorage.setItem('questifyQuestions', JSON.stringify(questions)); }
         function saveProgress() { localStorage.setItem('questifyGlobalProgress', JSON.stringify(teamProgress)); }
 
-        function setMode(m) { /* same as previous */ }
-        function showMasterTab(n) { /* same as previous */ }
+        function setMode(m) {
+            document.getElementById('mode-select').classList.add('hidden');
+            document.getElementById('master-screen').classList.toggle('hidden', m !== 'master');
+            document.getElementById('player-screen').classList.toggle('hidden', m !== 'player');
+            if (m === 'master') {
+                showMasterTab(0);
+            } else {
+                initPlayer();
+            }
+        }
 
-        // ==================== TABLE RENDERING ====================
+        function showMasterTab(n) {
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`tab-content-${i}`).classList.add('hidden');
+                document.getElementById(`tab-${i}`).classList.remove('bg-amber-400', 'text-black');
+            }
+            document.getElementById(`tab-content-${n}`).classList.remove('hidden');
+            document.getElementById(`tab-${n}`).classList.add('bg-amber-400', 'text-black');
+            if (n === 1) renderTeamScores();
+        }
+
         function renderQuestionsTable() {
             const tbody = document.getElementById('questions-table');
             tbody.innerHTML = '';
@@ -139,16 +151,12 @@
                 tr.className = 'hover:bg-white/5';
                 tr.innerHTML = `
                     <td class="p-3 font-mono">${q.id}</td>
-                    <td class="p-3 uppercase text-xs">${q.category || q.type}</td>
+                    <td class="p-3 uppercase text-xs">${q.category || 'mixed'}</td>
                     <td class="p-3 max-w-xs truncate">${q.question}</td>
                     <td class="p-3 text-center">${q.options.length}</td>
                     <td class="p-3 text-center">
-                        <button onclick="editQuestion(${i})" class="text-blue-400 hover:text-blue-300 mr-4">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button onclick="deleteQuestion(${i})" class="text-red-400 hover:text-red-300">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
+                        <button onclick="editQuestion(${i})" class="text-blue-400 hover:text-blue-300 mr-4"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteQuestion(${i})" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -156,15 +164,7 @@
         }
 
         function addNewQuestion() {
-            const newQ = {
-                id: questions.length + 1,
-                category: "grammar",
-                question: "New question text",
-                options: ["Option 1", "Option 2", "Option 3", "Option 4"],
-                answer: 0,
-                explanation: "Explanation here",
-                image: ""
-            };
+            const newQ = { id: questions.length + 1, category: "grammar", question: "New question", options: ["A", "B", "C", "D"], answer: 0, explanation: "", image: "" };
             questions.push(newQ);
             saveQuestions();
             renderQuestionsTable();
@@ -173,14 +173,14 @@
 
         function editQuestion(index) {
             const q = questions[index];
-            const modalHTML = `
+            const html = `
                 <div class="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4" id="edit-modal">
-                    <div class="glass rounded-3xl p-8 w-full max-w-lg max-h-[90vh] overflow-auto">
+                    <div class="glass rounded-3xl p-8 w-full max-w-lg">
                         <h3 class="text-2xl mb-6">Edit Question #${q.id}</h3>
-                        <input id="edit-category" value="${q.category || ''}" placeholder="Category" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
+                        <input id="edit-category" value="${q.category||''}" class="w-full p-3 bg-white/10 rounded-2xl mb-4" placeholder="Category">
                         <textarea id="edit-question" class="w-full h-24 p-3 bg-white/10 rounded-2xl mb-4">${q.question}</textarea>
-                        <input id="edit-image" value="${q.image || ''}" placeholder="Image URL" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
-                        <input id="edit-options" value="${q.options.join(', ')}" placeholder="Options (comma separated)" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
+                        <input id="edit-image" value="${q.image||''}" class="w-full p-3 bg-white/10 rounded-2xl mb-4" placeholder="Image URL">
+                        <input id="edit-options" value="${q.options.join(', ')}" class="w-full p-3 bg-white/10 rounded-2xl mb-4" placeholder="Options (comma separated)">
                         <input id="edit-answer" value="${q.answer}" type="number" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
                         <textarea id="edit-explain" class="w-full h-20 p-3 bg-white/10 rounded-2xl">${q.explanation}</textarea>
                         <div class="flex gap-4 mt-8">
@@ -189,7 +189,7 @@
                         </div>
                     </div>
                 </div>`;
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            document.body.insertAdjacentHTML('beforeend', html);
         }
 
         function saveEditedQuestion(index) {
@@ -212,14 +212,136 @@
             }
         }
 
-        // CSV Import (same as before)
-        function importCSV() { /* paste the importCSV function from previous version */ }
+        function importCSV() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+            input.onchange = e => {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    const lines = ev.target.result.split('\n');
+                    questions = [];
+                    lines.forEach((line, i) => {
+                        if (i === 0 || !line.trim()) return;
+                        const cols = line.split(',').map(c => c.replace(/"/g,'').trim());
+                        if (cols.length >= 3) {
+                            questions.push({
+                                id: i,
+                                category: cols[0] || "mixed",
+                                question: cols[1],
+                                options: cols[2].split('|'),
+                                answer: parseInt(cols[3]),
+                                explanation: cols[4] || "",
+                                image: cols[5] || ""
+                            });
+                        }
+                    });
+                    saveQuestions();
+                    renderQuestionsTable();
+                    alert("CSV imported successfully!");
+                };
+                reader.readAsText(e.target.files[0]);
+            };
+            input.click();
+        }
 
-        // Other functions (renderTeamScores, generateAllQRCodes, player functions) remain the same
+        function renderTeamScores() {
+            const container = document.getElementById('team-scores');
+            container.innerHTML = '';
+            Object.keys(teamProgress).sort((a,b) => teamProgress[b]-teamProgress[a]).forEach(team => {
+                const score = teamProgress[team];
+                const percent = questions.length ? Math.round((score / questions.length)*100) : 0;
+                const div = document.createElement('div');
+                div.className = "glass rounded-2xl p-5 flex justify-between";
+                div.innerHTML = `<div class="text-2xl font-bold">TEAM ${team}</div><div class="text-right"><div class="text-3xl font-bold text-emerald-400">${score}/${questions.length}</div><div>${percent}%</div></div>`;
+                container.appendChild(div);
+            });
+        }
+
+        function generateAllQRCodes() {
+            const modal = document.getElementById('qr-modal');
+            const grid = document.getElementById('qr-grid');
+            grid.innerHTML = '';
+            modal.classList.remove('hidden');
+            for (let t = 1; t <= 6; t++) {
+                const div = document.createElement('div');
+                div.className = "text-center";
+                div.innerHTML = `<div class="font-bold mb-3">TEAM ${t}</div><div id="qr${t}"></div>`;
+                grid.appendChild(div);
+                new QRCode(document.getElementById(`qr${t}`), {
+                    text: `${window.location.origin}${window.location.pathname}?team=${t}`,
+                    width: 160, height: 160
+                });
+            }
+        }
+
+        function closeQRModal() { document.getElementById('qr-modal').classList.add('hidden'); }
+
+        // Player Functions
+        function initPlayer() {
+            const params = new URLSearchParams(window.location.search);
+            currentTeam = parseInt(params.get('team')) || parseInt(prompt("Enter Team Number (1-6)"));
+            currentClueIndex = teamProgress[currentTeam] || 0;
+            document.getElementById('player-header').innerHTML = `TEAM <span class="text-amber-400">${currentTeam}</span> • ${currentClueIndex}/${questions.length}`;
+            loadClue();
+        }
+
+        function loadClue() {
+            if (currentClueIndex >= questions.length) return alert("🎉 You finished the hunt!");
+            const q = questions[currentClueIndex];
+            selectedOption = null;
+
+            let html = `<p class="text-xl mb-8">${q.question}</p>`;
+            if (q.image) html += `<img src="${q.image}" class="w-full rounded-3xl mb-8">`;
+            html += `<div class="grid gap-3" id="options-grid"></div>`;
+            document.getElementById('question-content').innerHTML = html;
+
+            const grid = document.getElementById('options-grid');
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-5 border border-white/20 hover:border-amber-400 rounded-3xl transition";
+                btn.textContent = opt;
+                btn.onclick = () => selectOption(idx, btn);
+                grid.appendChild(btn);
+            });
+
+            document.getElementById('feedback').classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('submit-btn').classList.remove('hidden');
+        }
+
+        function selectOption(idx, btn) {
+            document.querySelectorAll('#options-grid button').forEach(b => b.classList.remove('border-amber-400', 'bg-amber-400/10'));
+            btn.classList.add('border-amber-400', 'bg-amber-400/10');
+            selectedOption = idx;
+        }
+
+        function submitAnswer() {
+            if (selectedOption === null) return alert("Select an answer!");
+            const q = questions[currentClueIndex];
+            const fb = document.getElementById('feedback');
+
+            if (selectedOption === q.answer) {
+                fb.innerHTML = `<div class="bg-emerald-900/70 p-8 rounded-3xl text-center"><p class="text-5xl mb-4">🎉</p><p class="text-3xl">CORRECT!</p><p>${q.explanation}</p></div>`;
+                teamProgress[currentTeam] = currentClueIndex + 1;
+                saveProgress();
+                document.getElementById('submit-btn').classList.add('hidden');
+                document.getElementById('next-btn').classList.remove('hidden');
+            } else {
+                fb.innerHTML = `<div class="bg-red-900/70 p-8 rounded-3xl text-center"><p class="text-xl">Incorrect</p></div>`;
+            }
+            fb.classList.remove('hidden');
+        }
+
+        function nextClue() {
+            currentClueIndex++;
+            loadClue();
+        }
 
         window.onload = () => {
             loadData();
-            if (new URLSearchParams(window.location.search).has('team')) {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('team')) {
                 setMode('player');
             }
         };
