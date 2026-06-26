@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Questify • Treasure Hunt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .title-font { font-family: 'Space Grotesk', sans-serif; }
+        .treasure-bg { background: linear-gradient(135deg, #0f172a 0%, #1e2937 100%); }
+        .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(16px); }
+    </style>
+</head>
+<body class="treasure-bg text-white min-h-screen">
+    <div class="max-w-2xl mx-auto p-4">
+
+        <!-- MODE SELECT -->
+        <div id="mode-select" class="text-center py-8">
+            <h1 class="title-font text-5xl font-bold mb-2">QUESTIFY</h1>
+            <p class="text-emerald-400 mb-8">English Treasure Hunt</p>
+            <div class="grid grid-cols-2 gap-4 max-w-xs mx-auto">
+                <button onclick="setMode('player')" class="glass py-8 rounded-3xl hover:bg-amber-400/10 border border-white/10">
+                    <i class="fa-solid fa-users text-4xl mb-3"></i>
+                    <div class="font-semibold">TEAM PLAYER</div>
+                </button>
+                <button onclick="setMode('master')" class="glass py-8 rounded-3xl hover:bg-amber-400/10 border border-white/10">
+                    <i class="fa-solid fa-crown text-4xl mb-3"></i>
+                    <div class="font-semibold">MASTER DASHBOARD</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- PLAYER SCREEN -->
+        <div id="player-screen" class="hidden">
+            <!-- Same clean game UI as before -->
+            <div class="glass border border-white/10 rounded-3xl p-6">
+                <div id="player-header" class="flex justify-between mb-6"></div>
+                <div id="question-content" class="min-h-[280px]"></div>
+                <div id="feedback" class="hidden mt-8 p-6 rounded-3xl"></div>
+                <div class="grid grid-cols-2 gap-4 mt-10">
+                    <button onclick="submitAnswer()" id="submit-btn" class="col-span-2 bg-white text-black font-semibold py-5 rounded-3xl">SUBMIT</button>
+                    <button onclick="nextClue()" id="next-btn" class="hidden col-span-2 bg-emerald-500 font-semibold py-5 rounded-3xl">NEXT CLUE →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MASTER DASHBOARD -->
+        <div id="master-screen" class="hidden">
+            <div class="glass border border-white/10 rounded-3xl p-6">
+                <h2 class="text-2xl title-font mb-6 flex items-center gap-3"><span>👑</span> MASTER DASHBOARD</h2>
+                <div id="master-leaderboard" class="space-y-4"></div>
+                
+                <div class="mt-8">
+                    <button onclick="generateAllQRCodes()" class="w-full py-4 bg-amber-400 text-black rounded-2xl font-semibold">Generate Team QR Codes</button>
+                </div>
+            </div>
+            <button onclick="refreshMaster()" class="mt-4 text-sm underline">Refresh Progress</button>
+        </div>
+
+        <!-- QR Modal -->
+        <div id="qr-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+            <div class="glass rounded-3xl p-8 max-w-xs w-full text-center">
+                <h3 class="mb-4">Team QR Codes</h3>
+                <div id="qr-list" class="space-y-8"></div>
+                <button onclick="closeQRModal()" class="mt-8 w-full py-3 border border-white/30 rounded-2xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let questions = [];
+        let teamProgress = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0}; // Central progress
+        let currentTeam = null;
+        let currentClueIndex = 0;
+        let mode = 'player';
+
+        const defaultQuestions = [ /* your questions here - same as previous */ ];
+
+        function loadData() {
+            const savedQ = localStorage.getItem('questifyQuestions');
+            questions = savedQ ? JSON.parse(savedQ) : defaultQuestions;
+
+            const savedProg = localStorage.getItem('questifyGlobalProgress');
+            if (savedProg) teamProgress = JSON.parse(savedProg);
+        }
+
+        function saveGlobalProgress() {
+            localStorage.setItem('questifyGlobalProgress', JSON.stringify(teamProgress));
+        }
+
+        function setMode(m) {
+            mode = m;
+            document.getElementById('mode-select').classList.add('hidden');
+            if (m === 'player') {
+                document.getElementById('player-screen').classList.remove('hidden');
+                initPlayer();
+            } else {
+                document.getElementById('master-screen').classList.remove('hidden');
+                renderMasterDashboard();
+            }
+        }
+
+        function initPlayer() {
+            // Auto-detect team from URL or prompt
+            const params = new URLSearchParams(window.location.search);
+            currentTeam = parseInt(params.get('team')) || prompt("Enter your Team Number (1-6):", "1");
+            currentClueIndex = teamProgress[currentTeam] || 0;
+            document.getElementById('player-header').innerHTML = `
+                <div>TEAM <span class="text-amber-400 font-bold">${currentTeam}</span></div>
+                <div class="text-emerald-400">${currentClueIndex} / ${questions.length}</div>
+            `;
+            loadClue();
+        }
+
+        function loadClue() {
+            if (currentClueIndex >= questions.length) return alert("🎉 You finished all clues!");
+            // ... same question rendering logic as previous version
+            // (omitted for brevity - copy from earlier code)
+        }
+
+        function submitAnswer() {
+            // ... same logic
+            if (correct) {
+                teamProgress[currentTeam] = currentClueIndex + 1;
+                saveGlobalProgress();
+                // refresh master if open in another tab
+            }
+        }
+
+        function renderMasterDashboard() {
+            const container = document.getElementById('master-leaderboard');
+            container.innerHTML = '';
+            Object.keys(teamProgress).sort((a,b) => teamProgress[b] - teamProgress[a]).forEach(team => {
+                const prog = teamProgress[team];
+                const percent = Math.round((prog / questions.length) * 100);
+                const div = document.createElement('div');
+                div.className = "glass rounded-2xl p-5 flex justify-between items-center";
+                div.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <span class="text-3xl">TEAM ${team}</span>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-emerald-400">${prog}/${questions.length}</div>
+                        <div class="text-xs text-slate-400">${percent}%</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function refreshMaster() {
+            renderMasterDashboard();
+        }
+
+        function generateAllQRCodes() {
+            const modal = document.getElementById('qr-modal');
+            const list = document.getElementById('qr-list');
+            list.innerHTML = '';
+            modal.classList.remove('hidden');
+
+            for (let t = 1; t <= 6; t++) {
+                const div = document.createElement('div');
+                div.className = "text-center";
+                div.innerHTML = `<div class="font-bold mb-2">TEAM ${t}</div><div id="qr-${t}"></div>`;
+                list.appendChild(div);
+
+                const url = `${window.location.origin}${window.location.pathname}?team=${t}`;
+                new QRCode(document.getElementById(`qr-${t}`), {
+                    text: url,
+                    width: 180,
+                    height: 180,
+                    colorDark: "#fcd34d",
+                    colorLight: "#1e2937"
+                });
+            }
+        }
+
+        function closeQRModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+        }
+
+        // Initialize
+        window.onload = () => {
+            loadData();
+            // If URL has ?team= , auto start in player mode
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('team')) {
+                setMode('player');
+            }
+        };
+    </script>
+</body>
+</html>
