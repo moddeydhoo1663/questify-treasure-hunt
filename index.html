@@ -30,40 +30,39 @@
 
         <!-- MASTER MODE -->
         <div id="master-screen" class="hidden">
-            <!-- Navigation -->
             <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
-                <button onclick="showMasterTab(0)" id="tab-0" class="master-tab active px-5 py-2 rounded-2xl whitespace-nowrap">Questions</button>
+                <button onclick="showMasterTab(0)" id="tab-0" class="master-tab active px-5 py-2 rounded-2xl whitespace-nowrap bg-amber-400 text-black">Questions</button>
                 <button onclick="showMasterTab(1)" id="tab-1" class="master-tab px-5 py-2 rounded-2xl whitespace-nowrap">Team Scores</button>
                 <button onclick="showMasterTab(2)" id="tab-2" class="master-tab px-5 py-2 rounded-2xl whitespace-nowrap">QR Codes</button>
             </div>
 
-            <!-- Tab 0: Questions -->
+            <!-- Questions Tab -->
             <div id="tab-content-0">
                 <div class="glass rounded-3xl p-6">
                     <div class="flex justify-between mb-4">
-                        <h3 class="text-xl">Master Questions Sheet</h3>
+                        <h3 class="text-xl font-semibold">Master Questions Sheet</h3>
                         <div class="flex gap-2">
-                            <button onclick="addNewQuestion()" class="bg-emerald-600 px-4 py-2 rounded-2xl text-sm">+ Add</button>
-                            <button onclick="importCSV()" class="bg-blue-600 px-4 py-2 rounded-2xl text-sm">Import CSV</button>
+                            <button onclick="addNewQuestion()" class="bg-emerald-600 px-5 py-2 rounded-2xl text-sm">+ Add</button>
+                            <button onclick="importCSV()" class="bg-blue-600 px-5 py-2 rounded-2xl text-sm">Import CSV</button>
                         </div>
                     </div>
-                    <div id="questions-sheet" class="max-h-[45vh] overflow-auto space-y-4"></div>
+                    <div id="questions-sheet" class="max-h-[50vh] overflow-auto space-y-4"></div>
                 </div>
             </div>
 
-            <!-- Tab 1: Team Scores -->
+            <!-- Team Scores Tab -->
             <div id="tab-content-1" class="hidden">
                 <div class="glass rounded-3xl p-6">
                     <h3 class="text-xl mb-6">Live Team Progress</h3>
                     <div id="team-scores" class="space-y-4"></div>
-                    <button onclick="refreshScores()" class="mt-6 w-full py-3 border border-white/30 rounded-2xl">Refresh Scores</button>
+                    <button onclick="renderTeamScores()" class="mt-6 w-full py-3 border border-white/30 rounded-2xl">Refresh</button>
                 </div>
             </div>
 
-            <!-- Tab 2: QR Codes -->
+            <!-- QR Tab -->
             <div id="tab-content-2" class="hidden">
                 <div class="glass rounded-3xl p-6 text-center">
-                    <button onclick="generateAllQRCodes()" class="w-full py-6 bg-amber-400 text-black rounded-3xl font-semibold mb-6">Generate All Team QR Codes</button>
+                    <button onclick="generateAllQRCodes()" class="w-full py-6 bg-amber-400 text-black rounded-3xl font-semibold">Generate Team QR Codes</button>
                 </div>
             </div>
         </div>
@@ -71,7 +70,7 @@
         <!-- PLAYER SCREEN -->
         <div id="player-screen" class="hidden">
             <div class="glass border border-white/10 rounded-3xl p-6">
-                <div id="player-header" class="flex justify-between mb-6"></div>
+                <div id="player-header" class="flex justify-between mb-6 text-lg"></div>
                 <div id="question-content" class="min-h-[320px]"></div>
                 <div id="feedback" class="hidden mt-8 p-6 rounded-3xl"></div>
                 <div class="grid grid-cols-2 gap-4 mt-10">
@@ -112,17 +111,22 @@
             document.getElementById('mode-select').classList.add('hidden');
             document.getElementById('master-screen').classList.toggle('hidden', m !== 'master');
             document.getElementById('player-screen').classList.toggle('hidden', m !== 'player');
-            if (m === 'master') showMasterTab(0);
-            else initPlayer();
+            if (m === 'master') {
+                showMasterTab(0);
+            } else {
+                initPlayer();
+            }
         }
 
         function showMasterTab(n) {
             for (let i = 0; i < 3; i++) {
-                document.getElementById(`tab-content-${i}`).classList.add('hidden');
-                document.getElementById(`tab-${i}`).classList.remove('active', 'bg-amber-400', 'text-black');
+                const content = document.getElementById(`tab-content-${i}`);
+                const tab = document.getElementById(`tab-${i}`);
+                if (content) content.classList.add('hidden');
+                if (tab) tab.classList.remove('bg-amber-400', 'text-black');
             }
             document.getElementById(`tab-content-${n}`).classList.remove('hidden');
-            document.getElementById(`tab-${n}`).classList.add('active', 'bg-amber-400', 'text-black');
+            document.getElementById(`tab-${n}`).classList.add('bg-amber-400', 'text-black');
             if (n === 1) renderTeamScores();
         }
 
@@ -133,78 +137,131 @@
                 const div = document.createElement('div');
                 div.className = 'glass rounded-2xl p-5';
                 div.innerHTML = `
-                    <div class="flex justify-between">
+                    <div class="flex justify-between items-start">
                         <div>
-                            <span class="font-mono">#${q.id}</span>
-                            <span class="ml-3 text-xs uppercase px-3 py-1 bg-amber-400/20 rounded-xl">${q.category || q.type}</span>
+                            <span class="font-mono text-sm">#${q.id}</span>
+                            <span class="ml-3 uppercase text-xs px-3 py-1 bg-amber-400/20 text-amber-400 rounded-xl">${q.category || q.type}</span>
                         </div>
-                        <div>
-                            <button onclick="editQuestion(${i})" class="text-blue-400 mr-4"><i class="fa-solid fa-pen"></i></button>
+                        <div class="flex gap-4">
+                            <button onclick="editQuestion(${i})" class="text-blue-400"><i class="fa-solid fa-pen"></i></button>
                             <button onclick="deleteQuestion(${i})" class="text-red-400"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
                     <p class="mt-3 line-clamp-2">${q.question}</p>
+                    ${q.image ? `<img src="${q.image}" class="mt-3 rounded-xl h-32 w-full object-cover">` : ''}
                 `;
                 container.appendChild(div);
             });
         }
 
         function addNewQuestion() {
-            const newQ = { id: Date.now(), category: "grammar", question: "New question", options: ["A","B","C","D"], answer: 0, explanation: "", image: "" };
+            const newQ = {
+                id: questions.length + 1,
+                category: "grammar",
+                question: "Enter new question",
+                options: ["Option 1", "Option 2", "Option 3", "Option 4"],
+                answer: 0,
+                explanation: "Explanation",
+                image: ""
+            };
             questions.push(newQ);
+            saveQuestions();
+            renderQuestionsSheet();
+            editQuestion(questions.length - 1);
+        }
+
+        function editQuestion(index) {
+            const q = questions[index];
+            const modalHTML = `
+                <div class="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4" id="edit-modal">
+                    <div class="glass rounded-3xl p-8 w-full max-w-lg max-h-[90vh] overflow-auto">
+                        <h3 class="text-2xl mb-6">Edit Question #${q.id}</h3>
+                        
+                        <label class="block text-sm mb-1">Category</label>
+                        <input id="edit-category" value="${q.category || q.type}" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
+
+                        <label class="block text-sm mb-1">Question</label>
+                        <textarea id="edit-question" class="w-full h-24 p-3 bg-white/10 rounded-2xl mb-4">${q.question}</textarea>
+
+                        <label class="block text-sm mb-1">Image URL (optional)</label>
+                        <input id="edit-image" value="${q.image || ''}" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
+
+                        <label class="block text-sm mb-1">Options (comma separated)</label>
+                        <input id="edit-options" value="${q.options.join(', ')}" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
+
+                        <label class="block text-sm mb-1">Correct Answer Index (0 = first option)</label>
+                        <input id="edit-answer" value="${q.answer}" type="number" class="w-full p-3 bg-white/10 rounded-2xl mb-4">
+
+                        <label class="block text-sm mb-1">Explanation</label>
+                        <textarea id="edit-explain" class="w-full h-20 p-3 bg-white/10 rounded-2xl">${q.explanation}</textarea>
+
+                        <div class="flex gap-4 mt-8">
+                            <button onclick="saveEditedQuestion(${index}); document.getElementById('edit-modal').remove()" 
+                                    class="flex-1 py-4 bg-emerald-600 rounded-2xl font-semibold">Save Question</button>
+                            <button onclick="document.getElementById('edit-modal').remove()" 
+                                    class="flex-1 py-4 border border-white/30 rounded-2xl">Cancel</button>
+                        </div>
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function saveEditedQuestion(index) {
+            const q = questions[index];
+            q.category = document.getElementById('edit-category').value;
+            q.question = document.getElementById('edit-question').value;
+            q.image = document.getElementById('edit-image').value;
+            q.options = document.getElementById('edit-options').value.split(',').map(o => o.trim());
+            q.answer = parseInt(document.getElementById('edit-answer').value);
+            q.explanation = document.getElementById('edit-explain').value;
             saveQuestions();
             renderQuestionsSheet();
         }
 
-        function editQuestion(i) { /* same edit modal as before */ 
-            // (Full edit modal code is available if needed - let me know)
-            alert("Edit feature works. Full modal coming in next update if you need.");
-        }
-
-        function deleteQuestion(i) {
-            if (confirm("Delete?")) { questions.splice(i,1); saveQuestions(); renderQuestionsSheet(); }
+        function deleteQuestion(index) {
+            if (confirm("Delete this question?")) {
+                questions.splice(index, 1);
+                saveQuestions();
+                renderQuestionsSheet();
+            }
         }
 
         function renderTeamScores() {
             const container = document.getElementById('team-scores');
             container.innerHTML = '';
-            Object.keys(teamProgress).sort((a,b)=>teamProgress[b]-teamProgress[a]).forEach(team => {
+            Object.keys(teamProgress).sort((a,b) => teamProgress[b] - teamProgress[a]).forEach(team => {
                 const score = teamProgress[team];
-                const percent = Math.round((score / questions.length) * 100) || 0;
+                const percent = questions.length ? Math.round((score / questions.length) * 100) : 0;
                 const div = document.createElement('div');
                 div.className = "glass rounded-2xl p-5 flex justify-between items-center";
                 div.innerHTML = `
                     <div class="text-2xl font-bold">TEAM ${team}</div>
                     <div class="text-right">
                         <div class="text-3xl font-bold text-emerald-400">${score} / ${questions.length}</div>
-                        <div class="text-sm text-slate-400">${percent}%</div>
+                        <div class="text-sm">${percent}% completed</div>
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        function refreshScores() {
-            renderTeamScores();
-        }
-
         function importCSV() {
+            // Same as previous version
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.csv';
             input.onchange = e => {
-                const file = e.target.files[0];
                 const reader = new FileReader();
                 reader.onload = ev => {
-                    const rows = ev.target.result.split('\n');
+                    const lines = ev.target.result.split('\n');
                     questions = [];
-                    rows.forEach((row, idx) => {
-                        if (idx === 0 || !row.trim()) return;
-                        const cols = row.split(',').map(c => c.trim().replace(/"/g,''));
-                        if (cols.length >= 4) {
+                    lines.forEach((line, i) => {
+                        if (i === 0 || !line.trim()) return;
+                        const cols = line.split(',').map(c => c.replace(/"/g, '').trim());
+                        if (cols.length >= 3) {
                             questions.push({
-                                id: idx,
-                                category: cols[0] || "mixed",
+                                id: i,
+                                category: cols[0],
                                 question: cols[1],
                                 options: cols[2].split('|'),
                                 answer: parseInt(cols[3]),
@@ -215,46 +272,105 @@
                     });
                     saveQuestions();
                     renderQuestionsSheet();
-                    alert("CSV imported successfully!");
+                    alert("✅ Questions imported from CSV!");
                 };
-                reader.readAsText(file);
+                reader.readAsText(e.target.files[0]);
             };
             input.click();
         }
 
-        function generateAllQRCodes() { /* same as before */ 
-            // ... QR code code from previous version
-            alert("QR Codes ready! (Full function in previous versions)");
+        function generateAllQRCodes() {
+            const modal = document.getElementById('qr-modal');
+            const grid = document.getElementById('qr-grid');
+            grid.innerHTML = '';
+            modal.classList.remove('hidden');
+
+            for (let t = 1; t <= 6; t++) {
+                const div = document.createElement('div');
+                div.className = "text-center";
+                div.innerHTML = `<div class="font-bold mb-3">TEAM ${t}</div><div id="qr-t${t}"></div>`;
+                grid.appendChild(div);
+                new QRCode(document.getElementById(`qr-t${t}`), {
+                    text: `${window.location.origin}${window.location.pathname}?team=${t}`,
+                    width: 160,
+                    height: 160
+                });
+            }
         }
 
-        function closeQRModal() { document.getElementById('qr-modal').classList.add('hidden'); }
+        function closeQRModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+        }
 
-        // Player functions (loadClue, submitAnswer, etc.)
+        // Player Functions
         function initPlayer() {
             const params = new URLSearchParams(window.location.search);
-            currentTeam = parseInt(params.get('team')) || parseInt(prompt("Team Number (1-6)"));
+            currentTeam = parseInt(params.get('team')) || parseInt(prompt("Enter Team Number (1-6)"));
             currentClueIndex = teamProgress[currentTeam] || 0;
-            document.getElementById('player-header').innerHTML = `TEAM <span class="text-amber-400">${currentTeam}</span> — ${currentClueIndex}/${questions.length}`;
+            document.getElementById('player-header').innerHTML = `TEAM <span class="text-amber-400 font-bold">${currentTeam}</span> • ${currentClueIndex}/${questions.length}`;
             loadClue();
         }
 
         function loadClue() {
-            if (currentClueIndex >= questions.length) return alert("🎉 You finished!");
-            // ... same as previous full version
-            console.log("Loading clue", currentClueIndex);
+            if (currentClueIndex >= questions.length) return alert("🎉 Congratulations! You finished all clues.");
+            const q = questions[currentClueIndex];
+            selectedOption = null;
+
+            let html = `<p class="text-xl mb-8">${q.question}</p>`;
+            if (q.image) html += `<img src="${q.image}" class="rounded-3xl mb-8 w-full">`;
+
+            html += `<div class="grid gap-3" id="options-grid"></div>`;
+            document.getElementById('question-content').innerHTML = html;
+
+            const grid = document.getElementById('options-grid');
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-5 border border-white/20 hover:border-amber-400 rounded-3xl";
+                btn.textContent = opt;
+                btn.onclick = () => selectOption(idx, btn);
+                grid.appendChild(btn);
+            });
+
+            document.getElementById('feedback').classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('submit-btn').classList.remove('hidden');
+        }
+
+        function selectOption(idx, btn) {
+            document.querySelectorAll('#options-grid button').forEach(b => b.classList.remove('border-amber-400', 'bg-amber-400/10'));
+            btn.classList.add('border-amber-400', 'bg-amber-400/10');
+            selectedOption = idx;
         }
 
         function submitAnswer() {
-            // ... same logic
-            if (correct) {
+            if (selectedOption === null) return alert("Please choose an answer!");
+            const q = questions[currentClueIndex];
+            const fb = document.getElementById('feedback');
+
+            if (selectedOption === q.answer) {
+                fb.innerHTML = `<div class="bg-emerald-900/70 p-8 rounded-3xl text-center"><p class="text-5xl mb-4">🎉</p><p class="text-3xl">CORRECT!</p><p class="mt-4">${q.explanation}</p></div>`;
                 teamProgress[currentTeam] = currentClueIndex + 1;
                 saveProgress();
+                document.getElementById('submit-btn').classList.add('hidden');
+                document.getElementById('next-btn').classList.remove('hidden');
+            } else {
+                fb.innerHTML = `<div class="bg-red-900/70 p-8 rounded-3xl text-center"><p class="text-xl">Incorrect. Try again.</p></div>`;
             }
+            fb.classList.remove('hidden');
+        }
+
+        function nextClue() {
+            currentClueIndex++;
+            loadClue();
         }
 
         window.onload = () => {
             loadData();
-            if (new URLSearchParams(window.location.search).has('team')) setMode('player');
+            if (new URLSearchParams(window.location.search).has('team')) {
+                setMode('player');
+            } else {
+                // Show mode selection
+            }
         };
     </script>
 </body>
